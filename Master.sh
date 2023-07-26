@@ -54,62 +54,90 @@ function pluginsinstall() {
 
 #Function to Install Tools in Jenkins Master 
 function toolsinstall() {
+  
+  # Replace "/path/to/source/directory" with the directory containing your ZIP and GZIP files
+  source_directory="/home/jenkins/tools/"
 
-# Replace "/path/to/source/directory" with the directory containing your ZIP and GZIP files
-source_directory="/home/jenkins/tools/"
+  custom_dir="/gartner/app/jenkins/tools/"
+  tools=("jdk-17.0.8" "jdk-19.0.2" "jdk-20.0.2" "node-v18.16.0-linux-arm64")
 
-custom_dir="/gartner/app/jenkins/tools/"
-tools=("jdk-17.0.8" "jdk-19.0.2" "jdk-20.0.2" "node-v18.16.0-linux-arm64")
+  # Change to the source directory to ensure the correct paths in the ZIP and GZIP files
+  cd "$source_directory"
 
-# Change to the source directory to ensure the correct paths in the ZIP and GZIP files
-cd "$source_directory"
+  # Function to check if a directory exists
+  check_dir_exists() {
+    if [ -d "$1" ]; then
+      echo "Directory '$1' exists."
+      echo "Skipping installation of '$1'."
+    else
+      echo "Directory '$1' does not exist."
+      # Loop through all .gz files and extract them to the custom location
+      for gz_file in "$2"*.gz; do
+        if [ -f "$gz_file" ]; then
+          echo "Installing '$gz_file'"
+          tar -xzvf "$gz_file" -C "$custom_dir"
+        fi
+      done
+      for zip_file in "$2"*.zip; do
+        if [ -f "$zip_file" ]; then
+          echo "Installing '$zip_file'"
+          unzip "$zip_file" -d "$custom_dir"
+        fi
+      done
+    fi
+  }
 
-# Function to check if a directory exists
-check_dir_exists() {
-  if [ -d "$1" ]; then
-    echo "Directory '$1' exists."
-    echo "Skipping installation of '$1'."
-  else
-    echo "Directory '$1' does not exist."
-    # Loop through all .gz files and extract them to the custom location
-    for gz_file in "$2"*.gz; do
-      if [ -f "$gz_file" ]; then
-        echo "Installing '$gz_file'"
-        tar -xzvf "$gz_file" -C "$custom_dir"
-      fi
-    done
-    for zip_file in "$2"*.zip; do
-      if [ -f "$zip_file" ]; then
-        echo "Installing '$zip_file'"
-        unzip "$zip_file" -d "$custom_dir"
-      fi
-    done
-  fi
-}
+  # Check if the custom directory exists
+  #check_dir_exists "$custom_dir"
 
-# Check if the custom directory exists
-#check_dir_exists "$custom_dir"
-
-# Check if the paths formed by tools exist
-for tool in "${tools[@]}"; do
-  tool_path="$custom_dir$tool"
-  check_dir_exists "$tool_path" "$tool"
-done
+  # Check if the paths formed by tools exist
+  for tool in "${tools[@]}"; do
+    tool_path="$custom_dir$tool"
+    check_dir_exists "$tool_path" "$tool"
+  done
 }
 
 ##Jcasc configiguration
 function update_jenkins_with_jcasc() {
+  yaml_dir="/home/jenkins/yaml"
+  mkdir -p $yaml_dir
+  aws s3 cp s3://tools-and-plugins/jenkins.yaml $yaml_dir
+
   JENKINS_HOME="/var/lib/jenkins"
   cas_global_config="$JENKINS_HOME/io.jenkins.plugins.casc.CasCGlobalConfig.xml"
   jcasc_config_file="$JENKINS_HOME/jenkins.yaml"
-
+  
   if [ ! -f "$jcasc_config_file" ]; then
-    echo "File is not present in $JENKINS_HOME copying from s3"
-    aws s3 cp s3://tools-and-plugins/jenkins.yaml $JENKINS_HOME
+    echo "File is not present in $JENKINS_HOME copying from $yaml_dir"
+    cp  $yaml_dir/jenkins.yaml $jcasc_config_file
     cd $JENKINS_HOME
     chown jenkins:jenkins jenkins.yaml
   else
-    echo "File is present in $JENKINS_HOME"
+    echo "File is present in $JENKINS_HOME comparing contents"
+    file1="$yaml_dir/jenkins.yaml"
+    file2="$jcasc_config_file"
+
+    # Check if both files exist
+    if [ ! -f "$file1" ] || [ ! -f "$file2" ]; then
+      echo "Error: Both files must exist."
+      exit 1
+    fi
+
+    # Compare the content of the files using md5sum
+    md5sum1=$(md5sum "$file1" | awk '{print $1}')
+    md5sum2=$(md5sum "$file2" | awk '{print $1}')
+
+    # Compare the MD5 sums
+    if [ "$md5sum1" == "$md5sum2" ]; then
+      echo "Both files have the same content."
+      # Add your further actions here, if needed
+    else
+      echo "Content of the two files is different replacing it with new one."
+      #aws s3 cp s3://tools-and-plugins/jenkins.yaml $JENKINS_HOME
+      mv -f $yaml_dir/jenkins.yaml $JENKINS_HOME
+      cd $JENKINS_HOME
+      chown jenkins:jenkins jenkins.yaml
+    fi
   fi
 
   if [ ! -f "$cas_global_config" ]; then
@@ -210,5 +238,6 @@ exclude_jenkins_package_from_yum_updates
 #update_firewalld
 update_jenkins_sysconfig
 update_thread_max
+#get_dsl_jobs
 
 sudo systemctl try-restart jenkins
