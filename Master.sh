@@ -233,11 +233,11 @@ EoF
 copyplugins
 pluginsinstall
 toolsinstall
-update_jenkins_with_jcasc
 exclude_jenkins_package_from_yum_updates
 #update_firewalld
 update_jenkins_sysconfig
 update_thread_max
 #get_dsl_jobs
+update_jenkins_with_jcasc
 
 sudo systemctl try-restart jenkins
