@@ -1,30 +1,34 @@
 import requests
 import subprocess
+import platform
 import os
 
 # Bitbucket Server (self-hosted) details
-#bitbucket_server_url = "http://52.136.127.92:7990"
-bitbucket_server="52.136.127.92:7990"
-bitbucket_server_username = "SyncUser"
-bitbucket_server_http_token = "MTI1NTY1NDY0NzU4OuTEZRishBCg8QkF9ANqQDEbNceA"
+bitbucket_server="<BITBUCKET-SERVER-URL-WITHOUT-HTTP>"
+bitbucket_server_username = "<BITBUCKET-SERVER-USER>"
+bitbucket_server_http_token = "<HTTP-TOKEN>"
 
 # Bitbucket Cloud details
-bitbucket_cloud_username = "ArpitShivhare"
-bitbucket_cloud_app_password = "ATBBDbjVzeFpTze5RB2QpRAjBP6fE852B422"
-bitbucket_cloud_workspace = "test-1234567890"
+bitbucket_cloud_username = "<BITBUCKET-CLOUD-USER>"
+bitbucket_cloud_app_password = "<APP_PASSWORD>"
+bitbucket_cloud_workspace = "<WORKSPACE-NAME-BITBUCKET-CLOUD>"
 
 # Specify the Bitbucket Server project key
 bitbucket_server_project_keys = ["P1", "P2", "P3"]
 
+# Function to delete .git folder
 def remove_gitfolder(new_dir):
-        # Define the PowerShell command
-        powershell_command = f'Remove-Item -Path "{new_dir}" -Force -Recurse'
-        # Run the PowerShell command and capture the output
-        output = subprocess.check_output(['powershell', '-Command', powershell_command], shell=True)
-        # Decode the output as a string (optional)
-        output = output.decode('utf-8')
-        # Print the output
-        print(output)
+    try:
+        system_platform = platform.system()
+        if system_platform == "Windows":
+            cmd = f'rmdir /s /q "{new_dir}"'
+        else:
+            cmd = f'rm -rf "{new_dir}"'
+        
+        subprocess.run(cmd, shell=True, check=True)
+        print(f"Removed '{new_dir}' directory and its contents successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while removing '{new_dir}': {e}")
     
 for bitbucket_server_project_key in bitbucket_server_project_keys:
     print(f"\nExecution started for Project key: {bitbucket_server_project_key}")
@@ -59,7 +63,6 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
         bitbucket_cloud_url = f"https://{bitbucket_cloud_username}:{bitbucket_cloud_app_password}@bitbucket.org/{bitbucket_cloud_workspace}/{bitbucket_server_repo_slug}"
 
         # Fetch repository information from Bitbucket Server
-        #response = requests.get(bitbucket_server_api_url, auth=(bitbucket_server_username, bitbucket_server_http_token))
         response = requests.get(bitbucket_server_projects_api_url + f"/{bitbucket_server_repo_slug}", auth=(bitbucket_server_username, bitbucket_server_http_token))
         if response.status_code != 200:
             print(f"Failed to fetch {bitbucket_server_repo_slug} repository information from Bitbucket Server. \nError: {response.text}")
@@ -69,9 +72,6 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
 
         repo_data = response.json()
 
-        # Extract the repository URL from the server response
-        #server_repo_clone_url = repo_data["links"]["clone"][0]["href"]
-        
         # Create or update repository in Bitbucket Cloud
         headers = {
             "Content-Type": "application/json"
@@ -107,10 +107,9 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
             else:
                 print(f"Successfully cloned {bitbucket_server_repo_slug} repository from Bitbucket Server.")
             
-            # Change directory to repository folder
+            # Change directory to .git folder
             new_dir = f"./{bitbucket_server_repo_slug}.git"
             os.chdir(new_dir)
-            #os.getcwd()
 
             # Push the fetched repository to the Bitbucket Cloud repository
             print(f"Pushing {bitbucket_server_repo_slug} repository to Bitbucket Cloud")
@@ -122,7 +121,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                 
                 # Change directory back to original path
                 os.chdir("..")
-                #os.getcwd()
+                # Using function to delete .git folder
                 remove_gitfolder(new_dir)
             else:
                 print("Failed to push/sync Bitbucket Server repository with Bitbucket Cloud repository.")
@@ -130,7 +129,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                 
                 # Change directory back to original path
                 os.chdir("..")
-                #os.getcwd()
+                # Using function to delete .git folder
                 remove_gitfolder(new_dir)
                 exit(1)
     
@@ -167,17 +166,3 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                         print(f"Failed to create pull request '{pr_title}' in Bitbucket Cloud. \nError: {pr_create_response.text}")
             else:
                 print(f"Failed to fetch pull requests from Bitbucket Server. \nError: {pr_response.text}")
-
-            # # Change directory back to original path
-            # os.chdir("..")
-            # os.getcwd()
-
-            # # Delete Bitbucket server repository folder using subprocess module
-            # # Define the PowerShell command
-            # powershell_command = f'Remove-Item -Path "{new_dir}" -Force -Recurse'
-            # # Run the PowerShell command and capture the output
-            # output = subprocess.check_output(['powershell', '-Command', powershell_command], shell=True)
-            # # Decode the output as a string (optional)
-            # output = output.decode('utf-8')
-            # # Print the output
-            # print(output)       
