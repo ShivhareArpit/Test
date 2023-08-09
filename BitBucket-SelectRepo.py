@@ -4,7 +4,7 @@ import platform
 import os
 
 # Bitbucket Server (self-hosted) details
-bitbucket_server="<BITBUCKET-SERVER-URL>"
+bitbucket_server="<BITBUCKET-SERVER-URL-WITHOUT-HTTP>"
 bitbucket_server_username = "<BITBUCKET-SERVER-USER>"
 bitbucket_server_http_token = "<HTTP-TOKEN>"
 
