@@ -3,9 +3,9 @@ import os
 import csv
 
 # Bitbucket Server (self-hosted) details
-bitbucket_server="52.136.127.92:7990"
-bitbucket_server_username = "SyncUser"
-bitbucket_server_http_token = "MTI1NTY1NDY0NzU4OuTEZRishBCg8QkF9ANqQDEbNceA"
+bitbucket_server="<BITBUCKET-SERVER-URL-WITHOUT-HTTP>"
+bitbucket_server_username = "<BITBUCKET-SERVER-USERNAME>"
+bitbucket_server_http_token = "<HTTP-TOKEN>"
 
 # Specify the Bitbucket Server project key
 bitbucket_server_project_keys = ["P1", "P2", "P3"]
