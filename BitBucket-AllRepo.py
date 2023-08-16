@@ -1,6 +1,7 @@
 import requests
 import subprocess
 import platform
+import time
 import os
 
 # Bitbucket Server (self-hosted) details
@@ -12,6 +13,9 @@ bitbucket_server_http_token = "<HTTP-TOKEN>"
 bitbucket_cloud_username = "<BITBUCKET-CLOUD-USER>"
 bitbucket_cloud_app_password = "<APP-PASSWORD>"
 bitbucket_cloud_workspace = "<WORKSPACE-NAME-BITBUCKET-CLOUD>"
+
+# Sleep time in seconds
+sleep_time = 30
 
 # Specify the Bitbucket Server project key
 bitbucket_server_project_keys = ["P1", "P2", "P3"]
@@ -35,7 +39,7 @@ def remove_gitfolder(new_dir):
 for bitbucket_server_project_key in bitbucket_server_project_keys:
     print(f"\nExecution started for Project key: {bitbucket_server_project_key}")
     # Bitbucket Server API endpoint for projects
-    bitbucket_server_projects_api_url = f"https://{bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
+    bitbucket_server_projects_api_url = f"http://{bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
 
     next_page_start = 0
     while True:
@@ -56,7 +60,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     print(f"\nExecution started for Repository name: {bitbucket_server_repo_slug} of {bitbucket_server_project_key} project")
                     
                     # Bitbucket Server API endpoints
-                    bitbucket_server_api_url = f"https://{bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos/{bitbucket_server_repo_slug}"
+                    bitbucket_server_api_url = f"http://{bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos/{bitbucket_server_repo_slug}"
                     bitbucket_server_pr_api_url = f"{bitbucket_server_api_url}/pull-requests"
 
                     # Bitbucket Cloud API endpoints
@@ -64,7 +68,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     bitbucket_cloud_pr_api_url = f"{bitbucket_cloud_api_url}/pullrequests"
 
                     #Bitbucket Server Repository URL
-                    server_repo_clone_url = f'https://{bitbucket_server_username}:{bitbucket_server_http_token}@{bitbucket_server}/scm/{bitbucket_server_project_key}/{bitbucket_server_repo_slug}.git'
+                    server_repo_clone_url = f'http://{bitbucket_server_username}:{bitbucket_server_http_token}@{bitbucket_server}/scm/{bitbucket_server_project_key}/{bitbucket_server_repo_slug}.git'
                     #Bitbucket Cloud Repository URL
                     bitbucket_cloud_url = f"https://{bitbucket_cloud_username}:{bitbucket_cloud_app_password}@bitbucket.org/{bitbucket_cloud_workspace}/{bitbucket_server_repo_slug}"
 
@@ -173,6 +177,10 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                         else:
                             print(f"Failed to fetch pull requests from Bitbucket Server. \nError: {pr_response.text}")
             
+                print(f"Will wait for {sleep_time} seconds before proceeding to next step")
+                time.sleep(sleep_time)
+                print("Proceeding to next step")
+
             if "isLastPage" in response_server.json() and response_server.json()["isLastPage"]:
                 break  # Break the loop if it's the last page
             
@@ -180,3 +188,4 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
         else:
             print(f"Failed to fetch repository list from Bitbucket Server.\nError: {response_server.text}")
             exit(1)
+print ("Execution Complete")
