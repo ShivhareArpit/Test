@@ -1,6 +1,14 @@
 import requests
 import os
 import csv
+import logging
+
+# Configure logging to write to both log file and console
+logging.basicConfig(filename='script_log.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+logging.getLogger('').addHandler(console_handler)
 
 # Bitbucket Server (self-hosted) details
 bitbucket_server="<BITBUCKET-SERVER-URL-WITHOUT-HTTP>"
@@ -14,7 +22,7 @@ all_proj = []
 all_proj_name =[]
 
 for bitbucket_server_project_key in bitbucket_server_project_keys:
-    print(f"\nExecution started for Project key: {bitbucket_server_project_key}")
+    logging.info(f"Execution started for Project key: {bitbucket_server_project_key}")
     bitbucket_server_projects_api_url = f"http://{bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
 
     next_page_start = 0
@@ -37,8 +45,9 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
             
             next_page_start = response.json()["nextPageStart"]
         else:
-            print(f"Failed to fetch repository list from Bitbucket Server.\nError: {response.text}")
-            exit(1)
+            logging.info(f"Failed to fetch repository list from Bitbucket Server.\nError: {response.text}")
+            break
+            #exit(1)
 
 # Export the all_repo list to a CSV file
 csv_filename = "repository_list.csv"
@@ -49,4 +58,4 @@ with open(csv_filename, "w", newline="") as csvfile:
     for proj_n, proj_k, repo in zip(all_proj_name, all_proj, all_repo):
         csv_writer.writerow([proj_n, proj_k, repo])
 
-print(f"Repository list has been exported to {cdir}/{csv_filename}")
+logging.info(f"Repository list has been exported to {cdir}/{csv_filename}")
