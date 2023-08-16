@@ -11,10 +11,11 @@ bitbucket_server_http_token = "<HTTP-TOKEN>"
 bitbucket_server_project_keys = ["P1", "P2", "P3"]
 all_repo = []
 all_proj = []
+all_proj_name =[]
 
 for bitbucket_server_project_key in bitbucket_server_project_keys:
     print(f"\nExecution started for Project key: {bitbucket_server_project_key}")
-    bitbucket_server_projects_api_url = f"https://{bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
+    bitbucket_server_projects_api_url = f"http://{bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
 
     next_page_start = 0
     while True:
@@ -23,11 +24,13 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
         
         if response.status_code == 200:
             repo_list = response.json()["values"]
-            
             for repo_data in repo_list:
+                project_name = repo_data["project"]["name"]
                 bitbucket_server_repo_slug = repo_data["slug"]
+                
                 all_repo.append(bitbucket_server_repo_slug)
                 all_proj.append(bitbucket_server_project_key)
+                all_proj_name.append(project_name)
 
             if "isLastPage" in response.json() and response.json()["isLastPage"]:
                 break  # Break the loop if it's the last page
@@ -42,8 +45,8 @@ csv_filename = "repository_list.csv"
 cdir = os.getcwd()
 with open(csv_filename, "w", newline="") as csvfile:
     csv_writer = csv.writer(csvfile)
-    csv_writer.writerow(["Project", "Repository"])  # Write header
-    for proj, repo in zip(all_proj, all_repo):
-        csv_writer.writerow([proj, repo])
+    csv_writer.writerow(["Project Name","Project Key", "Repository"])  # Write header
+    for proj_n, proj_k, repo in zip(all_proj_name, all_proj, all_repo):
+        csv_writer.writerow([proj_n, proj_k, repo])
 
 print(f"Repository list has been exported to {cdir}/{csv_filename}")
