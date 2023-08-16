@@ -1,6 +1,7 @@
 import requests
 import subprocess
 import platform
+import time
 import os
 
 # Bitbucket Server (self-hosted) details
@@ -12,6 +13,9 @@ bitbucket_server_http_token = "<HTTP-TOKEN>"
 bitbucket_cloud_username = "<BITBUCKET-CLOUD-USER>"
 bitbucket_cloud_app_password = "<APP_PASSWORD>"
 bitbucket_cloud_workspace = "<WORKSPACE-NAME-BITBUCKET-CLOUD>"
+
+# Sleep time in seconds
+sleep_time = 30
 
 # Specify the Bitbucket Server project key
 bitbucket_server_project_keys = ["P2", "P3", "P1"]
@@ -159,3 +163,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                             print(f"Failed to create pull request '{pr_title}' in Bitbucket Cloud. \nError: {pr_create_response.text}")
                 else:
                     print(f"Failed to fetch pull requests from Bitbucket Server. \nError: {pr_response.text}")
+            print(f"Will wait for {sleep_time} seconds before proceeding to next step")
+            time.sleep(sleep_time)
+            print("Proceeding to next step")
+print ("Execution Complete")
