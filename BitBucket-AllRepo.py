@@ -6,10 +6,10 @@ import os
 import logging
 
 # Configure logging to write to both log file and console
-logging.basicConfig(filename='script_log.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename='script_log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logging.getLogger('').addHandler(console_handler)
 
 # Bitbucket Server (self-hosted) details
@@ -42,7 +42,7 @@ def remove_gitfolder(new_dir):
         subprocess.run(cmd, shell=True, check=True)
         logging.info(f"Removed '{new_dir}' directory and its contents successfully.")
     except subprocess.CalledProcessError as e:
-        logging.info(f"An error occurred while removing '{new_dir}': {e}")
+        logging.error(f"An error occurred while removing '{new_dir}': {e} \n")
     
 for bitbucket_server_project_key in bitbucket_server_project_keys:
     logging.info(f"Execution started for Project key: {bitbucket_server_project_key}")
@@ -83,8 +83,9 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     # Fetch repository information from Bitbucket Server
                     response = requests.get(bitbucket_server_projects_api_url + f"/{bitbucket_server_repo_slug}", auth=(bitbucket_server_username, bitbucket_server_http_token))
                     if response.status_code != 200:
-                        logging.info(f"Failed to fetch {bitbucket_server_repo_slug} repository information from Bitbucket Server. Error: {response.text}")
-                        exit(1)
+                        logging.error(f"Failed to fetch {bitbucket_server_repo_slug} repository information from Bitbucket Server. Error: {response.text} \n")
+                        # exit(1)
+                        break
                     else:
                         logging.info(f"Fetched {bitbucket_server_repo_slug} repository information from Bitbucket Server.")
 
@@ -109,8 +110,9 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     response = requests.put(bitbucket_cloud_api_url, headers=headers, auth=auth, json=payload)
                 
                     if response.status_code != 200:
-                        logging.info(f"Failed to create/update {bitbucket_server_repo_slug} repository in Bitbucket Cloud. Error: {response.text}")
-                        exit(1)
+                        logging.error(f"Failed to create/update {bitbucket_server_repo_slug} repository in Bitbucket Cloud. Error: {response.text} \n")
+                        # exit(1)
+                        break
                     else:
                         logging.info(f"Configuring {bitbucket_server_repo_slug} repository on Bitbucket Cloud.")
                         # Fetch the Bitbucket Server repository
@@ -119,9 +121,10 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                         fetch_process = subprocess.Popen(fetch_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         fetch_process.wait()
                         if fetch_process.returncode != 0:
-                            logging.info(f"Failed to clone {bitbucket_server_repo_slug} repository from Bitbucket Server.")
-                            logging.info(fetch_process.stderr.read().decode())
-                            exit(1)
+                            logging.error(f"Failed to clone {bitbucket_server_repo_slug} repository from Bitbucket Server.")
+                            logging.error(fetch_process.stderr.read().decode())
+                            # exit(1)
+                            break
                         else:
                             logging.info(f"Successfully cloned {bitbucket_server_repo_slug} repository from Bitbucket Server.")
                         
@@ -142,14 +145,15 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                             # Using function to delete .git folder
                             remove_gitfolder(new_dir)
                         else:
-                            logging.info("Failed to push/sync Bitbucket Server repository with Bitbucket Cloud repository.")
-                            logging.info(push_process.stderr.read().decode())
+                            logging.error("Failed to push/sync Bitbucket Server repository with Bitbucket Cloud repository.")
+                            logging.error(push_process.stderr.read().decode())
                             
                             # Change directory back to original path
                             os.chdir("..")
                             # Using function to delete .git folder
                             remove_gitfolder(new_dir)
-                            exit(1)
+                            # exit(1)
+                            break
 
                         # Fetch and sync pull requests from Bitbucket Server to Bitbucket Cloud
                         pr_response = requests.get(bitbucket_server_pr_api_url, auth=(bitbucket_server_username, bitbucket_server_http_token))
@@ -181,9 +185,9 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                                 if pr_create_response.status_code == 201:
                                     logging.info(f"Pull request '{pr_title}' created in Bitbucket Cloud.")
                                 else:
-                                    logging.info(f"Failed to create pull request '{pr_title}' in Bitbucket Cloud. Error: {pr_create_response.text}")
+                                    logging.error(f"Failed to create pull request '{pr_title}' in Bitbucket Cloud. Error: {pr_create_response.text} \n")
                         else:
-                            logging.info(f"Failed to fetch pull requests from Bitbucket Server. Error: {pr_response.text}")
+                            logging.error(f"Failed to fetch pull requests from Bitbucket Server. Error: {pr_response.text} \n")
             
                 logging.info(f"Will wait for {sleep_time} seconds before proceeding to next step")
                 time.sleep(sleep_time)
@@ -194,6 +198,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
             
             next_page_start = response_server.json()["nextPageStart"]
         else:
-            logging.info(f"Failed to fetch repository list from Bitbucket Server. Error: {response_server.text}")
-            exit(1)
-logging.info ("Execution Complete")
+            logging.error(f"Failed to fetch repository list from Bitbucket Server. Error: {response_server.text} \n")
+            # exit(1)
+            break
+logging.info ("Execution Complete.\n")

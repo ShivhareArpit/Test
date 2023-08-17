@@ -4,10 +4,10 @@ import csv
 import logging
 
 # Configure logging to write to both log file and console
-logging.basicConfig(filename='script_log.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename='script_log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logging.getLogger('').addHandler(console_handler)
 
 # Bitbucket Server (self-hosted) details
