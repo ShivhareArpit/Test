@@ -162,24 +162,41 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                             pr_data = pr_response.json()
                             for pr in pr_data["values"]:
                                 pr_title = pr["title"]
-                                pr_description = pr["description"]
                                 pr_source_branch = pr["fromRef"]["displayId"]
                                 pr_destination_branch = pr["toRef"]["displayId"]
 
-                                # Create the pull request in Bitbucket Cloud
-                                pr_payload = {
-                                    "title": pr_title,
-                                    "source": {
-                                        "branch": {
-                                            "name": pr_source_branch
-                                        }
-                                    },
-                                    "destination": {
-                                        "branch": {
-                                            "name": pr_destination_branch
+                                if "description" in pr:
+                                    pr_description = pr["description"]
+                                    # Create the pull request in Bitbucket Cloud
+                                    pr_payload = {
+                                        "title": pr_title,
+                                        "description": pr_description,  # Add description if not empty
+                                        "source": {
+                                            "branch": {
+                                                "name": pr_source_branch
+                                            }
+                                        },
+                                        "destination": {
+                                            "branch": {
+                                                "name": pr_destination_branch
+                                            }
                                         }
                                     }
-                                }
+                                else:
+                                    # Create the pull request in Bitbucket Cloud
+                                    pr_payload = {
+                                        "title": pr_title,
+                                        "source": {
+                                            "branch": {
+                                                "name": pr_source_branch
+                                            }
+                                        },
+                                        "destination": {
+                                            "branch": {
+                                                "name": pr_destination_branch
+                                            }
+                                        }
+                                    }
 
                                 pr_create_response = requests.post(bitbucket_cloud_pr_api_url, headers=headers, auth=auth, json=pr_payload)
                                 if pr_create_response.status_code == 201:

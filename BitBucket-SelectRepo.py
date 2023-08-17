@@ -29,7 +29,7 @@ sleep_time = 30
 bitbucket_server_project_keys = ["P2", "P3", "P1"]
 
 # Specify the Bitbucket Server repository names
-bitbucket_server_repo_slugs = [["p2repo1", "p2repo2"], ["p3repo1"], ["p1repo2"]]
+bitbucket_server_repo_slugs = [["p2repo1", "p2repo2"], ["p3repo1"], ["p1repo1"]]
 
 # Function to delete .git folder
 def remove_gitfolder(new_dir):
@@ -149,25 +149,42 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     pr_data = pr_response.json()
                     for pr in pr_data["values"]:
                         pr_title = pr["title"]
-                        pr_description = pr["description"]
                         pr_source_branch = pr["fromRef"]["displayId"]
                         pr_destination_branch = pr["toRef"]["displayId"]
 
-                        # Create the pull request in Bitbucket Cloud
-                        pr_payload = {
-                            "title": pr_title,
-                            "source": {
-                                "branch": {
-                                    "name": pr_source_branch
-                                }
-                            },
-                            "destination": {
-                                "branch": {
-                                    "name": pr_destination_branch
+                        if "description" in pr:
+                            pr_description = pr["description"]
+                            # Create the pull request in Bitbucket Cloud
+                            pr_payload = {
+                                "title": pr_title,
+                                "description": pr_description,  # Add description if not empty
+                                "source": {
+                                    "branch": {
+                                        "name": pr_source_branch
+                                    }
+                                },
+                                "destination": {
+                                    "branch": {
+                                        "name": pr_destination_branch
+                                    }
                                 }
                             }
-                        }
-
+                        else:
+                            # Create the pull request in Bitbucket Cloud
+                            pr_payload = {
+                                "title": pr_title,
+                                "source": {
+                                    "branch": {
+                                        "name": pr_source_branch
+                                    }
+                                },
+                                "destination": {
+                                    "branch": {
+                                        "name": pr_destination_branch
+                                    }
+                                }
+                            }
+                        
                         pr_create_response = requests.post(bitbucket_cloud_pr_api_url, headers=headers, auth=auth, json=pr_payload)
                         if pr_create_response.status_code == 201:
                             logging.info(f"Pull request '{pr_title}' created in Bitbucket Cloud.")
