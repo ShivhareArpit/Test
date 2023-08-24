@@ -13,12 +13,12 @@ console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(
 logging.getLogger('').addHandler(console_handler)
 
 # Gartner's Bitbucket Server (self-hosted) details
-gt_bitbucket_server= "3.145.159.218:7990"
+gt_bitbucket_server= "3.139.74.203:7990"
 gt_bitbucket_server_username = "Arpit"
 gt_bitbucket_server_http_token = "NDc1MjU3NDU1OTAxOs9QKi+kM0WZ9eCsYf8GUTIwdgHg"
 
 # TN's Bitbucket Server (self-hosted) details
-tn_bitbucket_server= "3.15.196.235:7990"
+tn_bitbucket_server= "3.22.175.39:7990"
 tn_bitbucket_server_username = "Arpit"
 tn_bitbucket_server_http_token = "MDI3NzcwNzM2OTMyOnwwP915wLHfcy2XVntKYmwXJ3UB"
 
@@ -29,6 +29,9 @@ sleep_time = 1
 bitbucket_server_project_keys = ["P1", "P2", "P3", "P4"]
 
 skip_repo = ["ec2", "wordpress"]
+
+gt_auth = (gt_bitbucket_server_username, gt_bitbucket_server_http_token)
+tn_auth = (tn_bitbucket_server_username, tn_bitbucket_server_http_token)
 
 # Function to delete .git folder
 def remove_gitfolder(new_dir):
@@ -43,6 +46,61 @@ def remove_gitfolder(new_dir):
         logging.info(f"Removed '{new_dir}' directory and its contents successfully.")
     except subprocess.CalledProcessError as e:
         logging.error(f"An error occurred while removing '{new_dir}': {e} \n")
+
+# Function to fetch and sync pull requests from Gartner's Bitbucket Server to TN's Bitbucket Server
+def pull_requests(gt_bitbucket_server_pr_api_url, gt_auth, tn_bitbucket_server_pr_api_url, tn_auth):
+    pr_response = requests.get(gt_bitbucket_server_pr_api_url, auth=gt_auth)
+    if pr_response.status_code == 200:
+        logging.info("Fetched pull requests data from Gartner's Bitbucket Server.")
+        pr_data = pr_response.json()
+        for pr in pr_data["values"]:
+            pr_title = pr["title"]
+            pr_source_branch = pr["fromRef"]["displayId"]
+            pr_destination_branch = pr["toRef"]["displayId"]
+            pr_author_name = pr["author"]["user"]["displayName"]
+
+            reviewers = []
+            for reviewer in pr["reviewers"]:
+                reviewers.append(reviewer["user"]["name"])
+
+            if "description" in pr:
+                pr_description = pr["description"]
+                pr_payload = {
+                    "title": pr_title,
+                    #"description": pr_description,  # Add description if not empty
+                    "description": f"Original Author: {pr_author_name}\n\nReviewers: {', '.join(reviewers)}\n\n{pr_description}",
+                    "fromRef": {
+                        "id": pr_source_branch  # Assuming pr_source_branch is the correct branch identifier
+                    },
+                    "toRef": {
+                        "id": pr_destination_branch  # Assuming pr_destination_branch is the correct branch identifier
+                    },
+                    #"reviewers": [{"username": reviewer} for reviewer in reviewers]
+                }
+            else:
+                pr_payload = {
+                    "title": pr_title,
+                    "fromRef": {
+                        "id": pr_source_branch  # Assuming pr_source_branch is the correct branch identifier
+                    },
+                    "toRef": {
+                        "id": pr_destination_branch  # Assuming pr_destination_branch is the correct branch identifier
+                    },
+                    "description": f"Original Author: {pr_author_name}\n\nReviewers: {', '.join(reviewers)}",
+                    # "reviewers": [{"displayName": reviewer} for reviewer in reviewers]
+                }
+            # headers = {
+            #     "Content-Type": "application/json"
+            # }
+
+            pr_create_response = requests.post(tn_bitbucket_server_pr_api_url, json=pr_payload, auth=tn_auth)
+            if pr_create_response.status_code == 201:
+                logging.info(f"Pull request '{pr_title}' created in TN's Bitbucket Server.")
+            else:
+                logging.error(f"Failed to create pull request '{pr_title}' in TN's Bitbucket Server. Error: {pr_create_response.text} \n")
+    else:
+        logging.error(f"Failed to fetch pull requests from Gartner's Bitbucket Server. Error: {pr_response.text} \n")
+
     
 for bitbucket_server_project_key in bitbucket_server_project_keys:
     logging.info(f"Execution started for Project key: {bitbucket_server_project_key}")
@@ -52,7 +110,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
     next_page_start = 0
     while True:
         params = {"start": next_page_start}
-        response_server = requests.get(gt_bitbucket_server_projects_api_url, auth=(gt_bitbucket_server_username, gt_bitbucket_server_http_token), params=params)
+        response_server = requests.get(gt_bitbucket_server_projects_api_url, auth=gt_auth, params=params)
         
         if response_server.status_code == 200:
             repo_list = response_server.json()["values"]
@@ -83,7 +141,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     tn_server_repo_clone_url = f'http://{tn_bitbucket_server_username}:{tn_bitbucket_server_http_token}@{tn_bitbucket_server}/scm/{bitbucket_server_project_key}/{bitbucket_server_repo_slug}.git'
 
                     # Fetch repository information from Gartner's Bitbucket Server
-                    response = requests.get(gt_bitbucket_server_api_url, auth=(gt_bitbucket_server_username, gt_bitbucket_server_http_token))
+                    response = requests.get(gt_bitbucket_server_api_url, auth=gt_auth)
                     if response.status_code != 200:
                         logging.error(f"Failed to fetch {bitbucket_server_repo_slug} repository information from Gartner's Bitbucket Server. Error: {response.text} \n")
                         #exit(1)
@@ -94,7 +152,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     repo_data = response.json()
 
                     # Fetch repository information from Gartner's Bitbucket Server
-                    responseb = requests.get(gt_bitbucket_server_branch_api_url, auth=(gt_bitbucket_server_username, gt_bitbucket_server_http_token))
+                    responseb = requests.get(gt_bitbucket_server_branch_api_url, auth=gt_auth)
                     if responseb.status_code != 200:
                         logging.error(f"Failed to fetch branch information of {bitbucket_server_repo_slug} repository from Gartner's Bitbucket Server. Error: {responseb.text} \n")
                         #exit(1)
@@ -107,7 +165,7 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     for branch in branch_data["values"]:
                         if branch.get("isDefault"):
                             default_branch_name = branch["displayId"]
-                            logging.info(f"Main branch is {default_branch_name} for {bitbucket_server_repo_slug} repository on Gartner's Bitbucket Server.")
+                            logging.info(f"'{default_branch_name}' is main branch for {bitbucket_server_repo_slug} repository on Gartner's Bitbucket Server.")
                             break
 
                     if repo_data.get("description"):
@@ -139,15 +197,15 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                         }
 
                     # Create or update repository in TN's Bitbucket Server
-                    create_response = requests.post(tn_bitbucket_server_api_url, json=payload, auth=(tn_bitbucket_server_username, tn_bitbucket_server_http_token))
-                    get_response = requests.get(tn_bitbucket_server_api_url_repo, json=payload, auth=(tn_bitbucket_server_username, tn_bitbucket_server_http_token))
+                    create_response = requests.post(tn_bitbucket_server_api_url, json=payload, auth=tn_auth)
+                    get_response = requests.get(tn_bitbucket_server_api_url_repo, json=payload, auth=tn_auth)
                     
                     if create_response.status_code != 201 and get_response.status_code != 200:
                         logging.error(f"Failed to create {bitbucket_server_repo_slug} repository in TN's Bitbucket Server. Error: {create_response.text} {get_response.text} \n")
                         #exit(1)
                         break
                     else:
-                        response_tn = requests.put(tn_bitbucket_server_api_url_repo, json=payload, auth=(tn_bitbucket_server_username, tn_bitbucket_server_http_token))
+                        response_tn = requests.put(tn_bitbucket_server_api_url_repo, json=payload, auth=tn_auth)
 
                         if response_tn.status_code != 200:
                             logging.error(f"Failed to create {bitbucket_server_repo_slug} repository in TN's Bitbucket Server. Error: {response_tn.text} \n")
@@ -192,6 +250,9 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                             remove_gitfolder(new_dir)
                             #exit(1)
                             break
+                            
+                        # Fetch and sync pull requests from Gartner's Bitbucket Server to TN's Bitbucket Server
+                        #pull_requests(gt_bitbucket_server_pr_api_url, gt_auth, tn_bitbucket_server_pr_api_url, tn_auth)
 
                 logging.info(f"Will wait for {sleep_time} seconds before proceeding to next step")
                 time.sleep(sleep_time)
