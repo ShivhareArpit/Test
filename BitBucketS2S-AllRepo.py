@@ -13,22 +13,23 @@ console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(
 logging.getLogger('').addHandler(console_handler)
 
 # Gartner's Bitbucket Server (self-hosted) details
-gt_bitbucket_server= "3.139.74.203:7990"
-gt_bitbucket_server_username = "Arpit"
-gt_bitbucket_server_http_token = "NDc1MjU3NDU1OTAxOs9QKi+kM0WZ9eCsYf8GUTIwdgHg"
+gt_bitbucket_server= "<GARTNER's-BITBUCKET-SERVER-URL-WITHOUT-HTTP/HTTPS>"
+gt_bitbucket_server_username = "<GARTNER's-BITBUCKET-SERVER-USER>"
+gt_bitbucket_server_http_token = "<GARTNER's-HTTP-TOKEN-WITH-READ-ACCESS>"
 
 # TN's Bitbucket Server (self-hosted) details
-tn_bitbucket_server= "3.22.175.39:7990"
-tn_bitbucket_server_username = "Arpit"
-tn_bitbucket_server_http_token = "MDI3NzcwNzM2OTMyOnwwP915wLHfcy2XVntKYmwXJ3UB"
+tn_bitbucket_server= "<TN's-BITBUCKET-SERVER-URL-WITHOUT-HTTP/HTTPS>"
+tn_bitbucket_server_username = "<TN's-BITBUCKET-SERVER-USER-WHICH-HAS-ADMIN-ACCESS>"
+tn_bitbucket_server_http_token = "<TN's-HTTP-TOKEN-WITH-ADMIN-ACCESS>"
 
 # Sleep time in seconds
-sleep_time = 1
+sleep_time = 30
 
 # Specify the Gartner's Bitbucket Server project key
 bitbucket_server_project_keys = ["P1", "P2", "P3", "P4"]
 
-skip_repo = ["ec2", "wordpress"]
+#Add repository name if you want to skip (ex: ["repo1", "repo2"])
+skip_repo = []
 
 gt_auth = (gt_bitbucket_server_username, gt_bitbucket_server_http_token)
 tn_auth = (tn_bitbucket_server_username, tn_bitbucket_server_http_token)
@@ -105,7 +106,7 @@ def pull_requests(gt_bitbucket_server_pr_api_url, gt_auth, tn_bitbucket_server_p
 for bitbucket_server_project_key in bitbucket_server_project_keys:
     logging.info(f"Execution started for Project key: {bitbucket_server_project_key}")
     # Gartner's Bitbucket Server API endpoint for projects
-    gt_bitbucket_server_projects_api_url = f"http://{gt_bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
+    gt_bitbucket_server_projects_api_url = f"https://{gt_bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
 
     next_page_start = 0
     while True:
@@ -125,20 +126,20 @@ for bitbucket_server_project_key in bitbucket_server_project_keys:
                     logging.info(f"Execution started for Repository name: {bitbucket_server_repo_slug} of {bitbucket_server_project_key} project")
 
                     # Gartner's Bitbucket Server API endpoints
-                    gt_bitbucket_server_api_url = f"http://{gt_bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos/{bitbucket_server_repo_slug}"
+                    gt_bitbucket_server_api_url = f"https://{gt_bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos/{bitbucket_server_repo_slug}"
                     gt_bitbucket_server_branch_api_url =f"{gt_bitbucket_server_api_url}/branches"
                     gt_bitbucket_server_pr_api_url = f"{gt_bitbucket_server_api_url}/pull-requests"
                     
                     # TN's Bitbucket Server API endpoints
-                    tn_bitbucket_server_api_url = f"http://{tn_bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
+                    tn_bitbucket_server_api_url = f"https://{tn_bitbucket_server}/rest/api/1.0/projects/{bitbucket_server_project_key}/repos"
                     tn_bitbucket_server_api_url_repo = f"{tn_bitbucket_server_api_url}/{bitbucket_server_repo_slug}"
                     tn_bitbucket_server_pr_api_url = f"{tn_bitbucket_server_api_url_repo}/pull-requests"
 
                     # Gartner's Bitbucket Server Repository URL
-                    gt_server_repo_clone_url = f'http://{gt_bitbucket_server_username}:{gt_bitbucket_server_http_token}@{gt_bitbucket_server}/scm/{bitbucket_server_project_key}/{bitbucket_server_repo_slug}.git'
+                    gt_server_repo_clone_url = f'https://{gt_bitbucket_server_username}:{gt_bitbucket_server_http_token}@{gt_bitbucket_server}/scm/{bitbucket_server_project_key}/{bitbucket_server_repo_slug}.git'
 
                     # TN's Bitbucket Server Repository URL
-                    tn_server_repo_clone_url = f'http://{tn_bitbucket_server_username}:{tn_bitbucket_server_http_token}@{tn_bitbucket_server}/scm/{bitbucket_server_project_key}/{bitbucket_server_repo_slug}.git'
+                    tn_server_repo_clone_url = f'https://{tn_bitbucket_server_username}:{tn_bitbucket_server_http_token}@{tn_bitbucket_server}/scm/{bitbucket_server_project_key}/{bitbucket_server_repo_slug}.git'
 
                     # Fetch repository information from Gartner's Bitbucket Server
                     response = requests.get(gt_bitbucket_server_api_url, auth=gt_auth)
