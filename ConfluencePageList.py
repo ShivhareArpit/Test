@@ -2,15 +2,11 @@ import requests
 import os
 import csv
 
-conf_url = 'https://test-con.atlassian.net'
-conf_user = 'arpit.shivhare@newvision-software.com'
-conf_pass = "ATATT3xFfGF0i0MzDCctW3Gm2ZKb7kUSGnO7B5LsscIKrQZ33S5Kj4lUNqD9GPMvdmeM6DaMfrPdoVn8SyY8E9VkGbZNmD4Al2QDCbvpayaMrTx6Ww66BclHpLS9zUWDvQijWNmGrhmAvFJi6kalfOhp_FSK9wJgo5tiYdiuFPvHEmWulP-GSKI=ECBDAB12"
+conf_url =  '<CONFLUENCE-SITE-URL'  # Ex: 'https://test-con.atlassian.net'
+conf_user = '<EMAIL-OF-USER'
+conf_pass = "<API-TOKEN>"           # URL to generate API token: https://id.atlassian.com/manage-profile/security/api-tokens
 
-# conf_url = "https://siteforkt.atlassian.net"
-# conf_user = "randomemail@guysmail.com"
-# conf_pass = "ATATT3xFfGF0xvDaHav7W648ZKOawxycsF4HwBkvgjX0svwEn2TEnor9pPpSZstGumOlR-PkvkdXpklNVGwEYOMcal2aIGQziZ0dfLQLA5yGdLPZ71NFh-EGIjIe-dFtEahn-BZEt7Q6L7AauPlgmZrIN1uU-izYP_3I3w03IDELSgYnjPMD47c=D1444803"
-
-space_key = "SPACE"
+space_key = '<SPACE-KEY>'
 
 all_title = []
 all_id = []
